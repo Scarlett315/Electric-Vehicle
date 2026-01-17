@@ -9,6 +9,16 @@ float angle_to_dist(float wheel_angle){ return (wheel_angle / 360.0) * (2 * PI *
 float angle_to_counts(float angle){ return angle / 360.0 * (float) GEAR_RATIO * (float) (ENCODER_CPR); }
 float dist_to_angle(float target_dist){ return target_dist / (2 * PI * WHEEL_RADIUS) * 360; }
 
+float normalize_angle(float angle) {
+  while (angle >= 180.0) angle -= 360.0;
+  while (angle <  -180.0) angle += 360.0;
+  return angle;
+}
+
+float shortest_angle(float target, float current) {
+  return normalize_angle(target - current);
+}
+
 
 // --------------------------- SIMPLE DRIVE -----------------------------------
 // spin motor for a certain time
@@ -73,56 +83,115 @@ void rotate_dist(int motor, float speed, float target_dist, bool debug){
 }
 
 // drive -- spin both motors in the same direction
-void drive_simple(float speed, float target_dist, bool debug){
-  float target_counts = angle_to_counts(dist_to_angle(target_dist)); // how many encoder counts to get to that position
+bool drive_simple(float speed, float target_dist, bool debug){
+  static bool initialized = false;
+  static long target_counts; 
+  static long pos_initial_1, pos_initial_2;
+  static unsigned long last_print;
 
-  float pos_initial_1 = pos_1;
-  float pos_initial_2 = pos_2;
 
-  if (debug){
-    Serial.print("Target counts: ");
-    Serial.print(target_counts);
-    Serial.print(" | pos_initial_1: ");
-    Serial.print(pos_initial_1);
-    Serial.print(" | pos_initial_2: ");
-    Serial.println(pos_initial_2);
+  // initialization
+  if (!initialized){
+    target_counts = angle_to_counts(dist_to_angle(target_dist)); // how many encoder counts to get to that position
+    pos_initial_1 = pos_1;
+    pos_initial_2 = pos_2;
+    last_print = 0;
+
+    if (debug){
+      Serial.print("Target counts: ");
+      Serial.print(target_counts);
+      Serial.print(" | pos_initial_1: ");
+      Serial.print(pos_initial_1);
+      Serial.print(" | pos_initial_2: ");
+      Serial.println(pos_initial_2);
+    }
+
+    mc.setSpeed(1, speed);
+    mc.setSpeed(2, speed);
+
+    initialized = true; 
   }
 
-  mc.setSpeed(1, speed);
-  mc.setSpeed(2, speed);
+  // error calculation + stop condition
+  long delta_left  = pos_1 - pos_initial_1; 
+  long delta_right = pos_2 - pos_initial_2;
+  long avg_delta = (delta_left + delta_right) / 2;
+  long error = target_counts - avg_delta;
 
-  // loop         TODO: should it stop if both of them reach the final position or take the average?
-  while(abs(pos_1) < abs(target_counts + pos_initial_1) || abs(pos_2) < abs(target_counts + pos_initial_2)){
-
-      // print encoder positions every 1s
-      if (debug){
-        static unsigned long last_print = 0;
-        if (millis() - last_print > 1000) {
-          Serial.print("Time: ");
-          Serial.print(millis());
-          Serial.print("ms | encoder pos_1: ");
-          Serial.print(pos_1);
-          Serial.print(" | encoder pos_2: ");
-          Serial.println(pos_2);
-
-          last_print = millis();
-        }
-      }
-
-      yield();
+  if(abs(error) < 10){
+    mc.setSpeed(1, 0);
+    mc.setSpeed(2, 0);
+    return true;
   }
 
-  mc.setSpeed(1, 0);
-  mc.setSpeed(2, 0);
+  // print encoder positions every 1s
+  if (debug && millis() - last_print > 1000){
+    Serial.print("Time: ");
+    Serial.print(millis());
+    Serial.print("ms | encoder pos_1: ");
+    Serial.print(pos_1);
+    Serial.print(" | encoder pos_2: ");
+    Serial.println(pos_2);
+
+    last_print = millis();
+  }
+
+  return false;
 }
 
 // tank turn a certain number of degrees
-void tank_turn_simple(float speed, float target_angle, bool debug){
-  float initial_angle = heading;
+bool tank_turn_simple(float speed, float target_angle, bool debug){
+  static bool initialized = false;
+  static float initial_angle;
+  static unsigned long last_print = 0;
+  static float turn_speed;
 
-  mc.setSpeed(1, speed);
-  mc.setSpeed(2, -speed);
+  // initialization/get motors running + decide which way would be less distance to turn
+  // TODO: once you get the robot actually decide which direction this is lol
+  if (!initialized){
+    initial_angle = heading;
+
+    if (debug){
+      Serial.print("Initial Heading: ");
+      Serial.println(heading);
+      last_print = 0;
+    }
+
+    turn_speed = constrain(abs(speed), 0, 400);
+    initialized = true; 
+  }
+
+  // calculate error 
+  float error = shortest_angle(target_angle, heading);
+
+  // which direction motors should turn
+  if (error > 0) {
+    mc.setSpeed(1,  turn_speed);
+    mc.setSpeed(2, -turn_speed);
+  } else {
+    mc.setSpeed(1, -turn_speed);
+    mc.setSpeed(2,  turn_speed);
+  }
+
+  // stop condition
+  if (abs(error) <= 2.0) {
+    mc.setSpeed(1, 0);
+    mc.setSpeed(2, 0);
+    initialized = false; //allow for new turns
+    return true;
+  }
+
+  // debugging! 
+  if (debug){
+    if (millis() - last_print > 1000) {
+      Serial.print("Time: ");
+      Serial.print(millis());
+      Serial.print("| Current Angle: ");
+      Serial.println(heading);
+      last_print = millis();
+    }
+  } 
   
-
+  return false;
 }
 

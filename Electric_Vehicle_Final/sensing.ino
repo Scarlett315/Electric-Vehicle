@@ -1,4 +1,3 @@
-
 void IRAM_ATTR read_encoder_M1(){
   int b = digitalRead(ENC1B);
   if(b>0){ // when the interrupt triggers, signal b is high  (clockwise)
@@ -30,16 +29,10 @@ void update_heading(){
 
   // integrate angular velocity with respect to time to get heading (approxmiation)
   dTheta = dT/1000 * omega;      // change in heading = change in time (seconds) x angular velocity
-  theta += dTheta;               // calculate new heading
+  heading += dTheta;               // calculate new heading
   
   //make the value wrap around (so that -180 < theta < 180)
-  while (theta > 180){
-    theta -= 360;
-  }
-  while (theta < -180){
-    theta += 360;
-  }
-  //Serial.println(theta);
+  heading = normalize_angle(heading);
 }
 
 
