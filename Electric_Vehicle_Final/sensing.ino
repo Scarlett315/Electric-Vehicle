@@ -10,9 +10,9 @@ void IRAM_ATTR read_encoder_M1(){
 void IRAM_ATTR read_encoder_M2(){
   int b = digitalRead(ENC2B);
   if(b>0){ // when the interrupt triggers, signal b is high  (clockwise)
-    pos_2++;
-  } else{ // when the interrupt triggers, signal b is low (counterclockwise)
     pos_2--;
+  } else{ // when the interrupt triggers, signal b is low (counterclockwise)
+    pos_2++;
   }
 }
 

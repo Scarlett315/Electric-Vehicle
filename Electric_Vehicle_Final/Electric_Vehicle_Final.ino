@@ -1,3 +1,9 @@
+/*
+distance is slightly too much
+ball caster is sliding, not rolling
+**FIX IMU
+*/
+
 #include <Motoron.h>
 #include "Modulino.h"
 
@@ -18,7 +24,7 @@ bool run_complete = false;
 
 // hardware constants -- everything length-related in meters
 const float WHEEL_RADIUS = 0.0254;
-const int ENCODER_CPR = 12;
+const int ENCODER_CPR = 3;
 const int GEAR_RATIO = 51;
 const float AXIAL_DIST = 0.1; //distance beteen the wheels (m)
 
@@ -55,9 +61,8 @@ void update_heading();
 // Motion States -- the "steps" that the robot takes
 enum MotionState {
   WAITING,
-  TURN_1,
   DRIVE_1,
-  TURN_2,
+  TURN_1,
   DONE
 };
 
@@ -82,24 +87,18 @@ void loop() {
   switch (motion_state) {
     case WAITING:
       if (await_button()){
-        motion_state = TURN_1;
-      }
-      break;
-
-    case TURN_1:
-      if (tank_turn_simple(200, 90, true)) {
         motion_state = DRIVE_1;
       }
       break;
 
     case DRIVE_1:
-      if (drive_simple(200, 1.0, true)) {  // 1 meter
-        motion_state = TURN_2;
-      }
-      break;
+    if (drive_simple(350, 8, true)) {  
+      motion_state = DONE;
+    }
+    break;
 
-    case TURN_2:
-      if (tank_turn_simple(200, 90, true)) {
+    case TURN_1:
+      if (tank_turn_simple(100, 90, true)) {
         motion_state = DONE;
       }
       break;
@@ -113,12 +112,12 @@ void loop() {
 
 void setup_hardware(){
   Serial.begin(9600);
-  while (!Serial) { delay(10); }
-  start_time = millis();
+  //while (!Serial) { delay(10); }
   last_heading_update = millis();
 
-
+  delay(2000);
   Wire.begin();
+  delay(2000); 
   
   // MOTOR CONTROLLER (re)INITIALIZATION
   mc.reinitialize();   
@@ -161,6 +160,11 @@ bool await_button(){
   if (button_state == HIGH) {
     Serial.println("Run started!!!");
     delay(500); // wait 0.5s
+
+    //reset variables
+    start_time = millis();
+    pos_1 = 0;
+    pos_2 = 0;
     return true;
   } 
   return false;

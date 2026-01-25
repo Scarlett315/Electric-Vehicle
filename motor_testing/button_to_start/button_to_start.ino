@@ -2,7 +2,7 @@
 MotoronI2C mc; // initialize motor controller
 
 // constants / pin numbers
-const int BUTTON_PIN = 47;  // the number of the pushbutton pin
+const int BUTTON_PIN = 21;  // the number of the pushbutton pin
 
 // variables
 bool started = false; // whether the button has been pushed or not to start the run

@@ -20,6 +20,7 @@ MotoronI2C mc;
 
 void setup()
 {
+  Serial.begin(9600);
   Wire.begin();
 
   // Reset the controller to its default settings, then disable
@@ -57,5 +58,36 @@ void loop()
 
   mc.setSpeed(2, 100);
 
-  Serial.print(mc.getLastError());
+  printMotoronStatusFlags();
+  delay(1000);
+}
+
+void printMotoronStatusFlags()
+{
+  Serial.println(F("=== Motoron Status Flags ==="));
+
+
+
+  Serial.print(F("Motor fault (latched): "));
+  Serial.println(mc.getMotorFaultLatchedFlag());
+
+  Serial.print(F("No power (latched): "));
+  Serial.println(mc.getNoPowerLatchedFlag());
+
+  Serial.print(F("Motor faulting: "));
+  Serial.println(mc.getMotorFaultingFlag());
+
+  Serial.print(F("No power: "));
+  Serial.println(mc.getNoPowerFlag());
+
+  Serial.print(F("Error active: "));
+  Serial.println(mc.getErrorActiveFlag());
+
+  Serial.print(F("Motor output enabled: "));
+  Serial.println(mc.getMotorOutputEnabledFlag());
+
+  Serial.print(F("Motor driving: "));
+  Serial.println(mc.getMotorDrivingFlag());
+
+  Serial.println(F("============================"));
 }
