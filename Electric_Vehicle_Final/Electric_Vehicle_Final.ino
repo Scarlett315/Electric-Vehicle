@@ -1,9 +1,3 @@
-/*
-distance is slightly too much
-ball caster is sliding, not rolling
-**FIX IMU
-*/
-
 #include <Motoron.h>
 #include "Modulino.h"
 
@@ -28,17 +22,23 @@ const int ENCODER_CPR = 3;
 const int GEAR_RATIO = 51;
 const float AXIAL_DIST = 0.1; //distance beteen the wheels (m)
 
+const float ANGLE_CORRECTION = 1.16;
+const float DRIFT_CORRECTION = 0.55;
+
 // position/encoders -- in encoder counts
 int start_time;
 int last_heading_update;
 volatile long pos_1 = 0;
 volatile long pos_2 = 0; 
 
-// angle/heading
+// angle/heading 
 float x, y, z;
 float omega; 
 
+
 volatile float heading = 0; //z-axis heading; -180 < heading < 180
+float corrected_heading = 0;
+
 float prev_time = 0; // time since last measurement
 float dT = 0;
 float dTheta = 0;
@@ -47,10 +47,25 @@ float dTheta = 0;
 bool started = false; 
 int button_state = 0; 
 
+//run constants
+// angle is 30 degrees
+const float TRACK_DIST = 3.0; // 7m < d < 20m
+const float TARGET_TIME = 20; // 10s < t < 20s
+const float TARGET_CAN_DIST = 0.3; // distance from center line to top can (m)
+const float INITIAL_RUN_DIST = 0.3;  
+
+const float FINAL_OFFSET = 0.02; // final distance is usually off by a few cm
+
+//run distances
+float dist_angled = 2 * TARGET_CAN_DIST;
+float dist_straight = TRACK_DIST - INITIAL_RUN_DIST - 1.73205 * dist_angled;
+
 // ---------- DECLARATIONS --------------
 void rotate_dist(int motor, float speed, float target_dist, bool debug=false);
 bool drive_simple(float speed, float target_dist, bool debug=false);
 bool tank_turn_simple(float speed, float target_angle, bool debug=false);
+bool drive_towards(float speed, float target_dist, float target_angle=heading, bool debug=false);
+bool read_heading(int ms);
 
 void IRAM_ATTR read_encoder_M1();
 void IRAM_ATTR read_encoder_M2();
@@ -61,8 +76,10 @@ void update_heading();
 // Motion States -- the "steps" that the robot takes
 enum MotionState {
   WAITING,
-  DRIVE_1,
-  TURN_1,
+  DRIVE_INITIAL,
+  DRIVE_OUT,
+  DRIVE_FORWARD,
+  DRIVE_BACK,
   DONE
 };
 
@@ -80,6 +97,7 @@ void loop() {
   //update frequency = 1 / 50ms = 20Hz
   if (millis() - last_heading_update >= 50){
     update_heading();
+    //corrected_heading = heading * ANGLE_CORRECTION;
     last_heading_update = millis();
   }
   
@@ -87,21 +105,33 @@ void loop() {
   switch (motion_state) {
     case WAITING:
       if (await_button()){
-        motion_state = DRIVE_1;
+        motion_state = DRIVE_INITIAL;
       }
       break;
 
-    case DRIVE_1:
-    if (drive_simple(350, 8, true)) {  
-      motion_state = DONE;
+    case DRIVE_INITIAL:
+    if (drive_towards(300, INITIAL_RUN_DIST, 0, true)) {  
+      motion_state = DRIVE_OUT;
     }
     break;
 
-    case TURN_1:
-      if (tank_turn_simple(100, 90, true)) {
-        motion_state = DONE;
+    case DRIVE_OUT:
+      if (drive_towards(300, dist_angled, 30, true)) {
+        motion_state = DRIVE_FORWARD;
       }
       break;
+
+    case DRIVE_FORWARD:
+      if (drive_towards(300, dist_straight, 0, true)) {
+        motion_state = DRIVE_BACK;
+      }
+      break;
+
+    case DRIVE_BACK:
+    if (drive_towards(300, dist_angled + FINAL_OFFSET, -30, true)) {
+      motion_state = DONE;
+    }
+    break;
 
     case DONE:
       break;
@@ -165,6 +195,7 @@ bool await_button(){
     start_time = millis();
     pos_1 = 0;
     pos_2 = 0;
+    heading = 0;
     return true;
   } 
   return false;
