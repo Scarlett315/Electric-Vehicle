@@ -49,12 +49,13 @@ int button_state = 0;
 
 //run constants
 // angle is 30 degrees
-const float TRACK_DIST = 3.0; // 7m < d < 20m
+const float TRACK_DIST = 6.0; // 7m < d < 20m
 const float TARGET_TIME = 20; // 10s < t < 20s
-const float TARGET_CAN_DIST = 0.3; // distance from center line to top can (m)
-const float INITIAL_RUN_DIST = 0.3;  
+const float TARGET_CAN_DIST = 0.75 - 0.05; // distance from center line to middle of cans (m)
+const float INITIAL_RUN_DIST = 0.5;  
 
 const float FINAL_OFFSET = 0.02; // final distance is usually off by a few cm
+const float TURN_SPEED = 300;
 
 //run distances
 float dist_angled = 2 * TARGET_CAN_DIST;
@@ -80,7 +81,8 @@ enum MotionState {
   DRIVE_OUT,
   DRIVE_FORWARD,
   DRIVE_BACK,
-  DONE
+  DONE,
+  DRIVE_TEST
 };
 
 MotionState motion_state = WAITING;
@@ -116,7 +118,7 @@ void loop() {
     break;
 
     case DRIVE_OUT:
-      if (drive_towards(300, dist_angled, 30, true)) {
+      if (drive_towards(TURN_SPEED, dist_angled, 30, true)) {
         motion_state = DRIVE_FORWARD;
       }
       break;
@@ -128,7 +130,7 @@ void loop() {
       break;
 
     case DRIVE_BACK:
-    if (drive_towards(300, dist_angled + FINAL_OFFSET, -30, true)) {
+    if (drive_towards(TURN_SPEED, dist_angled + FINAL_OFFSET, -30, true)) {
       motion_state = DONE;
     }
     break;

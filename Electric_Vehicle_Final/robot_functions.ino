@@ -22,7 +22,7 @@ float shortest_angle(float target, float current) {
 
 // ------------------- PD --------------------------
 float Kp_heading = 5.0;  
-float Kd_heading = 1;
+float Kd_heading = 2.2;
 
 // --------------------------- SIMPLE DRIVE -----------------------------------
 // spin motor for a certain time
