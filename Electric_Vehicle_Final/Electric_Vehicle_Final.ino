@@ -49,9 +49,9 @@ int button_state = 0;
 
 //run constants
 // angle is 30 degrees
-const float TRACK_DIST = 6.0; // 7m < d < 20m
+const float TRACK_DIST = 8.25; // 7m < d < 20m
 const float TARGET_TIME = 20; // 10s < t < 20s
-const float TARGET_CAN_DIST = 0.75 - 0.05; // distance from center line to middle of cans (m)
+const float TARGET_CAN_DIST = 0.70; // distance from center line to middle of cans (m)
 const float INITIAL_RUN_DIST = 0.5;  
 
 const float FINAL_OFFSET = 0.02; // final distance is usually off by a few cm

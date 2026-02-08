@@ -21,7 +21,7 @@ float shortest_angle(float target, float current) {
 }
 
 // ------------------- PD --------------------------
-float Kp_heading = 5.0;  
+float Kp_heading = 6.0;  
 float Kd_heading = 2.2;
 
 // --------------------------- SIMPLE DRIVE -----------------------------------
