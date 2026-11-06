@@ -151,7 +151,6 @@ bool tank_turn_simple(float speed, float target_angle, bool debug){
   static float turn_speed;
 
   // initialization/get motors running + decide which way would be less distance to turn
-  // TODO: once you get the robot actually decide which direction this is lol
   if (!initialized){
     initial_angle = heading;
 

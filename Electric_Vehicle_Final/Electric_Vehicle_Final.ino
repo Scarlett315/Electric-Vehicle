@@ -49,13 +49,13 @@ int button_state = 0;
 
 //run constants
 // angle is 30 degrees
-const float TRACK_DIST = 8.25; // 7m < d < 20m
+const float TRACK_DIST = 9.5; // 7m < d < 20m
 const float TARGET_TIME = 20; // 10s < t < 20s
-const float TARGET_CAN_DIST = 0.70; // distance from center line to middle of cans (m)
+const float TARGET_CAN_DIST = 0.8; // distance from center line to middle of cans (m)
 const float INITIAL_RUN_DIST = 0.5;  
 
-const float FINAL_OFFSET = 0.02; // final distance is usually off by a few cm
-const float TURN_SPEED = 300;
+const float FINAL_OFFSET = 0.05; // final distance is usually off by a few cm
+const float TURN_SPEED = 300; 
 
 //run distances
 float dist_angled = 2 * TARGET_CAN_DIST;
@@ -74,7 +74,7 @@ void update_heading();
 
 // -------------------------------------------------------------------------------------
 
-// Motion States -- the "steps" that the robot takes
+// motion states / "steps"
 enum MotionState {
   WAITING,
   DRIVE_INITIAL,
@@ -103,7 +103,7 @@ void loop() {
     last_heading_update = millis();
   }
   
-  // ---- motion state machine ----
+  // ---- motion state  ----
   switch (motion_state) {
     case WAITING:
       if (await_button()){
